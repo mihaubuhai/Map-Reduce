@@ -1,6 +1,6 @@
 #include "utils.hpp"
 
-// Functia pe care o executa un reducer
+// The function executed by a reducer
 void *reducer::reducer_func(void *arg) {
     pthread_barrier_wait(RARG->barrier);
 
@@ -8,51 +8,51 @@ void *reducer::reducer_func(void *arg) {
     int nr_mappers = RARG->nr_mappers;
     int nr_reducers = RARG->nr_reducers;
 
-    // Vom imparti fiecare lista a mapper-ilor in mod egal intre Reducer-i
+    // We will divide each mapper's list equally among the reducers
     for (int i = 0; i < nr_mappers; ++i) {
-        // Iteram prin array-ul de set-uri
+        // Iterate through the array of sets
         auto &set = (*(RARG->map_arr))[i];
         double size = (double)set.size();
 
-        // Calculam indicii pentru regiunea de lucru a unui reducer,
-        //  indici folositi pentru a accesa set-ul unui mapper
+        // Calculate the indices for the reducer's working region,
+        // indices used to access a mapper's set
         int start_step = (int)(id * size / nr_reducers);
         int k = (int)((id + 1) * size / nr_reducers);
         int end_step = k < size ? k : size;
 
-        // Iteratorul de inceput al set-ului
+        // Iterator pointing to the start of the set
         auto s_itr = set.begin();
         
-        // Iteratorul final al set-ului
+        // Iterator pointing to the end of the working region in the set
         auto end = std::next(s_itr, end_step);
         for (auto it = std::next(s_itr, start_step); it != end; ++it) {
-            // boolean folosit pentru a sti daca sa adaugam o intrare noua in set-ul de cuvinte
+            // Boolean used to check whether to add a new entry in the word set
             bool found = false;
             auto &word = (*it).first;
-            // Indicele cu care vom accesa lista de cuvinte din array-ul reducer-ilor
+            // Index used to access the word list in the reducers' array
             int arr_idx = word[0] - 'a';
 
             if (arr_idx < 0 || arr_idx > 26) {
                 continue;
             }
 
-            // Mutex-ul aferent unei liste de cuvinte din array-ul reducer-ilor
+            // Mutex associated with a word list in the reducers' array
             auto *mutex = &(*(RARG->reducer_arr))[arr_idx].second;
 
-            // Lista de cuvinte din array-ul reducer-ilor
+            // The word list in the reducers' array
             auto &red_arr_l = (*(RARG->reducer_arr))[arr_idx].first;
 
             pthread_mutex_lock(mutex);
-            // Iteram prin lista si cautam cuvantul "word"
+            // Iterate through the list and search for the word "word"
             for (auto &el : red_arr_l) {
-                if (el.first == word) { // Adaugam noul fisier
+                if (el.first == word) { // Add the new file
                     el.second.insert((*it).second);
                     found = true;
                     break;
                 }
             }
 
-            // Cuvantul nu se gaseste in lista, il adaugam
+            // If the word is not found in the list, add it
             if (!found) {
                 std::set<int> s { (*it).second };
                 (red_arr_l).push_back({word, s});
@@ -61,11 +61,11 @@ void *reducer::reducer_func(void *arg) {
         }
     }
 
-    // Asteptam ca toti reducer-ii sa isi termine executia
+    // Wait for all reducers to finish execution
     pthread_barrier_wait(RARG->reducer_barrier);
 
-    // Calculam indicii care delimiteaza zona de lucru a unui reducer anume,
-    //  indici cu care se vom accesa array-ul de liste de cuvinte "reducer::reducer_arr"
+    // Calculate the indices defining a specific reducer's working region,
+    // indices used to access the array of word lists "reducer::reducer_arr"
     int start_step = (int)(id * 26. / nr_reducers);
     int k = (int)((id + 1) * 26. / nr_reducers);
     int end_step = k < 26 ? k : 26;
@@ -76,21 +76,21 @@ void *reducer::reducer_func(void *arg) {
 
         auto &l = (*(RARG->reducer_arr))[i].first;
         l.sort([](auto& a, auto& b) {
-            // Comparam dupa dimensiunea set-ului de indici de fisiere
+            // Compare based on the size of the set of file indices
             if (a.second.size() != b.second.size()) {
                 return a.second.size() > b.second.size();
             }
 
-            // Set-uri de dimensiuni egale, atunci comparam lexicografic cuvintele
+            // If sets are of equal size, compare words lexicographically
             return a.first < b.first;
         }); 
 
-        // Deschidem fisierul si scriem in el
+        // Open the file and write to it
         std::ofstream fout(s);
         for (auto &p : l) {
             fout << p.first << ":[";
-            
-            // last_el este ultimul element; il scriem explicit pentru a formata frumos output-ul
+
+            // last_el is the last element; we write it explicitly for proper output formatting
             auto last_el = std::next(p.second.begin(), p.second.size() - 1);
             for (auto it = p.second.begin(); it != last_el; ++it) {
                 fout << *it << " ";

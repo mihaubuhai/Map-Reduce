@@ -5,6 +5,7 @@
 #include <fstream>
 #include <algorithm>
 #include <set>
+#include <unordered_set>
 #include <vector>
 #include <array>
 #include <list>
@@ -12,6 +13,14 @@
 
 namespace mapper {
     #define MAPPAIR std::pair<std::string, int>
+
+    // Written just for me in case I forget how to use unordered_set XD
+    // struct PairHash {
+        // std::size_t operator()(const std::pair<std::string, int>& p) const {
+            // return std::hash<std::string>()(p.first) ^ (std::hash<int>()(p.second) << 1);
+        // }
+    // };
+    // typedef std::vector<std::unordered_set<MAPPAIR, PairHash>> MapperArr;
 
     // MapperArr este un vector de set-uri de perechi,
     //  perechi ce contin un string (un cuvant dintr-un fisier)

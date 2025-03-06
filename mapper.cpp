@@ -12,7 +12,7 @@ std::string mapper::uniformize_string(std::string &in_string) {
     return rez;
 }
 
-// Functia pe care o executa un mapper
+// The function executed by a mapper
 void *mapper::mapper_func(void *arg) {
     int file_nr = 0;
     int idx = MARG->idx;
@@ -20,24 +20,24 @@ void *mapper::mapper_func(void *arg) {
     
     auto &fin = *MARG->fin;
 
-    // Set-ul de cuvinte asociat mapper-ului cu id-ul "idx"
+    // The set of words associated with the mapper with ID "idx"
     auto &set = (*(MARG->map_arr))[idx];
 
     std::string file_name;
     std::string word;
     while (1) {
         pthread_mutex_lock(MARG->mutex_fin);
-        if (fin.peek() != EOF) {   // Putem lucra pe un fisier
+        if (fin.peek() != EOF) {   // A file is available for processing
             file_nr = (file_idx++);
 
             fin >> file_name;
-        } else {    // Nu mai exista fisiere de prelucrat
+        } else {    // No more files left to process
             pthread_mutex_unlock(MARG->mutex_fin);
             break;
         }
         pthread_mutex_unlock(MARG->mutex_fin);
 
-        // Deschidem fisierul si il citim cuvant cu cuvant
+        // Open the file and read it word by word
         std::ifstream temp_fin(file_name);
         while (temp_fin.peek() != EOF) {
             temp_fin >> word;
@@ -52,7 +52,7 @@ void *mapper::mapper_func(void *arg) {
         temp_fin.close();
     }
 
-    // Asteptam executia tuturor mapper-ilor
+    // Wait for all mappers to finish execution
     pthread_barrier_wait(MARG->barrier);
     free(arg);
     return NULL;

@@ -7,47 +7,47 @@ int main(int argc, char **argv) {
     pthread_t threads[nr_threads];
 
     int nr_files = 0;
-    int file_idx = 1;   // Indicele fisierului folosit de mapper-i
+    int file_idx = 1;   // Index of the file used by the mappers
 
     std::ifstream fin(argv[3]);
     fin >> nr_files;
 
-    // Mutex pentru mapper pentru a accesa sigur un fisier
+    // Mutex for mappers to safely access a file
     pthread_mutex_t mutex_fin;
     pthread_mutex_init(&mutex_fin, NULL);
 
-    // Bariera la care se opresc mapper-ii inainte de finalizare
-    //  si reducer-ii inainte sa inceapa sa lucreze
+    // Barrier where mappers stop before finishing
+    // and reducers stop before starting their work
     pthread_barrier_t barrier;
     pthread_barrier_init(&barrier, NULL, nr_threads);
 
-    // Array-ul de liste pe care le completeaza Mapper-i
+    // Array of lists that the mappers populate
     mapper::MapperArr marr(nr_mappers);
 
-    // Array-ul de liste cu cuvinte scris de Reducer-i pentru fisierele out
+    // Array of lists with words written by the reducers for the output files
     reducer::ReducerArr rarr;
     for (auto &p : rarr) {
         pthread_mutex_init(&(p.second), NULL);
     }
 
-    // Variabila folosita pentru accesarea unei linii din MapperArg::map_arr
+    // Variable used to access a line from MapperArg::map_arr
     int list_idx = 0;
 
-    // Mutex folosit de reducer-i pentru variabila "list_idx"
+    // Mutex used by reducers for the "list_idx" variable
     pthread_mutex_t mutex_lid;
     pthread_mutex_init(&mutex_lid, NULL);
 
-    // Bariera la care se opresc reducer-ii inainte de a scrie in fisiere
+    // Barrier where reducers stop before writing to files
     pthread_barrier_t reducer_barrier;
     pthread_barrier_init(&reducer_barrier, NULL, nr_reducers);
     
-    // Un pointer care va puncta catre fie mapper_func(), fie reducer_func()
+    // A pointer that will point to either mapper_func() or reducer_func()
     void *(*f)(void *);
-    // Argumentul pasat functiei f de mai sus
+    // Argument passed to the function f above
     void *arg;
 
     for (int i = 0; i < nr_threads; ++i) {
-        if (i < nr_mappers) { // Cream un mapper
+        if (i < nr_mappers) { // Create a mapper
             f = mapper::mapper_func;
             arg = calloc(1, sizeof(mapper::marg));
             MARG->barrier = &barrier;
@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
             MARG->idx = i;
             MARG->map_arr = &marr;
             MARG->mutex_fin = &mutex_fin;
-        } else {    // Cream un reducer
+        } else {    // Create a reducer
             f = reducer::reducer_func;
             arg = calloc(1, sizeof(reducer::rarg));
             RARG->barrier = &barrier;
@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
         int rez = pthread_create(threads + i, NULL, f, arg);
 
         if (rez) {
-            std::cout << "Eroare la crearea unui thread!\n";
+            std::cout << "Error creating a thread!\n";
             exit(-1);
         }
     }
@@ -82,7 +82,7 @@ int main(int argc, char **argv) {
         int rez = pthread_join(threads[i], NULL);
 
         if (rez) {
-            std::cout << "Eroare la join pe thread\n";
+            std::cout << "Error joining a thread\n";
             exit(-1);
         }
     }
