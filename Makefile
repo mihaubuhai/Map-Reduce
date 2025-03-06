@@ -1,4 +1,4 @@
-build: utils.hpp
-		g++ reducer.cpp mapper.cpp main.cpp -o tema1 -lpthread -Wall -Werror
+build: *.cpp utils.hpp
+		g++ *.cpp -o mapred -lpthread -Wall -Werror
 clean:
-		rm tema1
+		rm mapred

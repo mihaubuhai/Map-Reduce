@@ -22,30 +22,30 @@ namespace mapper {
     // };
     // typedef std::vector<std::unordered_set<MAPPAIR, PairHash>> MapperArr;
 
-    // MapperArr este un vector de set-uri de perechi,
-    //  perechi ce contin un string (un cuvant dintr-un fisier)
-    //  si indicele fisierului
+    // MapperArr is a vector of sets of pairs,
+    //  pairs that contain a string (a word from a file)
+    //  and the file index
     typedef std::vector<std::set<MAPPAIR>> MapperArr;
 
     void *mapper_func(void*);
 
     typedef struct {
-        // Bariera la care se opresc mapper-ii si reducer-ii pentru sincronizare
+        // The barrier where mappers and reducers stop for synchronization
         pthread_barrier_t *barrier;
 
-        // Id-ul unui fisier
+        // The file ID
         int *file_idx;
 
-        // Fisierul care contine numele fisierelor de procesat
+        // The file that contains the names of the files to be processed
         std::ifstream *fin;
 
-        // Mutex-ul corespunzator "fin"
+        // Mutex corresponding to "fin"
         pthread_mutex_t *mutex_fin;
 
-        // Vectorul de set-uri de cuvinte populate de mapper-i
+        // The vector of sets of words populated by mappers
         MapperArr *map_arr;
 
-        // Ca sa acceseze a idx lista din map_arr
+        // To access the idx list in map_arr
         int idx;
     } marg, *MapperArg;
 
@@ -56,38 +56,38 @@ namespace reducer {
     #define PAIR std::pair<std::string, std::set<int>>
     #define LIST std::list<PAIR>
     
-    // ReducerArr este un array de perechi:
-    //      -> primul camp este o lista de perechi:
-    //      -----> primul camp este un string (un cuvant)
-    //      -----> al doilea camp este un set de ints (un set de indici de fisiere)
-    //      -> al doilea camp este un mutex
-    // ReducerArr are 26 de intrari, o intrare pentru fiecare litera din alfabetul englez
+    // ReducerArr is an array of pairs:
+    //      -> the first field is a list of pairs:
+    //      -----> the first field is a string (a word)
+    //      -----> the second field is a set of ints (a set of file indices)
+    //      -> the second field is a mutex
+    // ReducerArr has 26 entries, one for each letter of the English alphabet
     typedef std::array<std::pair<LIST, pthread_mutex_t>, 26> ReducerArr;
 
     typedef struct {
-        // Bariera la care se opresc si Mapper-ii
+        // The barrier where mappers stop
         pthread_barrier_t *barrier;
 
-        // Id-ul unui Reducer; pentru a imparti in mod egal munca
+        // The ID of a Reducer; to divide the work evenly
         int id;
 
-        // Bariera la care se opresc Reducer-ii inainte sa scrie in fisiere
+        // The barrier where reducers stop before writing to files
         pthread_barrier_t *reducer_barrier;
 
-        // Indice care puncteaza catre urmatoarea linie din MapperArg::map_arr de procesat
+        // The index pointing to the next line in MapperArg::map_arr to be processed
         int *list_idx;
 
-        // Mutex pentru ReducerArg::list_idx
+        // Mutex for ReducerArg::list_idx
         pthread_mutex_t *mutex_lid;
 
         int nr_mappers;
         int nr_reducers;
 
-        // Array-ul de perechi, pereche ce contine o lista de cuvinte
-        //  si un mutex pentru a preveni scrieri concomitente in ea 
+        // The array of pairs, where each pair contains a list of words
+        //  and a mutex to prevent concurrent writes to it
         ReducerArr *reducer_arr;
 
-        // Vector-ul de set-uri populate de mapper-i
+        // The vector of sets populated by mappers
         mapper::MapperArr *map_arr;
     } rarg, *ReducerArg;
 

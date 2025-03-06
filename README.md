@@ -1,29 +1,54 @@
-##Idee rezolvare tema
-    Mapper-ii isi iau cate un fisier de prelucrat din fisierul dat
-  ca parametru, pe care se foloseste un mutex (mapper::mutex_fin),
-  folosindu-se de indicele mapper::MapperArg->file_idx, incrementat
-  de fiecare data cand un Mapper a luat numele unui fisier.
-    Mapper-ii scriu perechile de {cuvant, id_fisier} intr-un std::set,
-  motivul fiind nestocarea de duplicate. Set-urile se gasesc intr-un
-  std::vector, redimensionat la numarul de Mapper care ruleaza in paralel.
-  Natural, fiecare Mapper se va opri la o bariera imediat dupa terminarea
-  lucrului sau, pentru a asigura popularea completa a tuturor set-urilor.
+# Objective
 
-    Reducer-ii lucreaza pe portiuni egale din fiecare std::set scris de
-  Mapper-i, adica un Reducer itereaza prin toate set-urile scrise de
-  Mapper-i, iar in functie de id-ul sau cu care a fost initializat in
-  functia main, isi ia in primire portiunea din set si lucreaza pe ea.
-    Lucrul initial al Reducer-ilor este de a popula un std::array de liste
-  de perechi de forma (cuvant, std::set<int>) cu datele scrise de Mapper-i.
-  Motivul folosirii unui std::array de liste este acela ca o lista corespunde
-  unei litere din alfabetul englez, iar liste pentru ca nu se cunoaste si nu
-  este important numarul exact de cuvinte care incep cu acea litera. Astfel,
-  array-ul dupa finalizarea acestei proceduri de catre Reducer-i, va contine
-  toate cuvintele si id-urile fisierelor in care se gasesc acestea, categorisite
-  in functie de prima litera a cuvantului.
-    A doua procedura pe care Reducer-ii o urmeaza este sortarea acestor liste
-  de cuvinte, intai descrescator dupa dimensiunea seturilor, iar in caz de
-  egalitate, lexicografic. Evident, Reducer-ii se vor opri la o bariera inainte
-  de aceasta procedura, pentru ca array-ul de liste sa fie complet populat.
-    Imediat dupa sortarea unei liste, un Reducer va crea fisierul corespunzator
-  acelei liste si va scrie in acesta.
+```
+    This project implements the Map Reduce paradigm in C++.
+    The project creates {a..z}.txt files, where all words from the given files  
+are stored along with their corresponding file index. Each word is stored in  
+the file named after the first character of the word. (e.g., 'hello' will be stored in h.txt).
+```
+
+# Use
+
+```
+    make && ./mapred <nr_mappers> <nr_reducers> <file>, where:
+        -> nr_mappers: total number of mappers (which are threads)
+        -> nr_reducers: total number of reducers (which are threads)
+        -> file: the input file, of the form:
+                            X
+                            PATH_TO_FILE_1
+                            PATH_TO_FILE_2
+                            ...
+            ,where: X - number of files, PATH_TO_FILE_i - absolute or relative path to the file of interest
+
+    ! All parameters are a must !
+```
+
+# Implementation
+
+```
+    Mappers take a file to process from the input file given as a parameter.  
+    Access to this file is controlled using a mutex (mapper::mutex_fin), relying on
+the index mapper::MapperArg->file_idx, which is incremented each time a Mapper retrieves a filename.  
+
+    Mappers write pairs of {word, file_id} into a std::set, the reason being to
+avoid storing duplicates. These sets are stored in a std::vector, resized to match the number of
+Mappers running in parallel. Naturally, each Mapper will stop at a barrier immediately after
+completing its work to ensure all sets are fully populated.  
+
+    Reducers work on equal portions of each std::set written by the Mappers.
+Specifically, a Reducer iterates through all sets created by the Mappers and, based on the ID
+it was assigned in the main function, takes ownership of its designated portion and processes it.  
+
+    The initial task of the Reducers is to populate a std::array of lists containing pairs
+in the format (word, std::set<int>) with data written by the Mappers.
+The reason for using a std::array of lists is that each list corresponds to a letter of the
+English alphabet, and lists are used because the exact number of words starting with a given letter
+is unknown and unimportant. Once this procedure is completed by all Reducers, the array will contain
+all words and the file IDs in which they appear, categorized by the first letter of the word.  
+
+    The second step for the Reducers is to sort these word lists: first, in descending order based on
+the size of the sets, and in case of equality, lexicographically.
+Naturally, Reducers will stop at a barrier before this step to ensure the array of lists is fully populated.  
+
+    Immediately after sorting a list, a Reducer will create the corresponding file and write the sorted words into it.
+```

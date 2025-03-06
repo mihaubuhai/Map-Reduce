@@ -1,5 +1,8 @@
 #include "utils.hpp"
 
+// This function creates a new string from the given one, where
+//  all letters are converted to their corresponding lower-case char
+//  and all non-alphabetic chars not included.
 std::string mapper::uniformize_string(std::string &in_string) {
     std::string rez;
 
